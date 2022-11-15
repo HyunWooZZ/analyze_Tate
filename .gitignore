@@ -1,3 +1,10 @@
-AndrewTwitStreaming/.big
+.metals
+.vscode
+.idea
+
+AndrewTwitStreaming/target/
 AndrewTwitStreaming/.idea
-AndrewTwitStreaming/
+AndrewTwitStreaming/.bsp
+AndrewTwitStreaming/project
+sparkPython/config/
+sparkPython/.venv
