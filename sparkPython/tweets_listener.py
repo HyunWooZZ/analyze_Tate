@@ -25,7 +25,7 @@ class TweetListener(tweepy.StreamingClient):
       # the 'text' in the JSON file contains the actual tweet.
       print(msg)
       # the actual tweet data is sent to the client socket
-      self.client_socket.send(msg)
+      self.client_socket.send(msg.encode('utf-8'))
       print("Sended ALL!!!")
       return True
 
@@ -40,7 +40,7 @@ class TweetListener(tweepy.StreamingClient):
 
   def start_streaming_tweets(self, search_term):
     self.add_rules(tweepy.StreamRule(value="BTS lang:en"))
-    self.filter(tweet_fields=["created_at"], expansions=["author_id"],user_fields=["username", "name"])
+    self.sample(tweet_fields=["created_at"], expansions=["author_id"],user_fields=["username", "name"])
     
     
 
