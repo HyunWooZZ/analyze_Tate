@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     query = words\
         .writeStream\
-        .outputMode('append')\
+        .outputMode('complete')\
         .format('console')\
         .start()
 

@@ -6,5 +6,7 @@ AndrewTwitStreaming/target/
 AndrewTwitStreaming/.idea
 AndrewTwitStreaming/.bsp
 AndrewTwitStreaming/project
-sparkPython/config/
+sparkPython/main/config/
 sparkPython/.venv
+sparkPython/check
+
