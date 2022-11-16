@@ -3,7 +3,7 @@ import re
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.functions import *
-from pyspark.sql.types import *
+
 from textblob import TextBlob
 
 
@@ -11,11 +11,9 @@ from textblob import TextBlob
 def getSubjectivity(tweet: str) -> float:
     return TextBlob(tweet).sentiment.subjectivity
 
-
 # Create a function to get the polarity
 def getPolarity(tweet: str) -> float:
     return TextBlob(tweet).sentiment.polarity
-
 
 def getSentiment(polarityValue: int) -> str:
     if polarityValue < 0:
@@ -26,6 +24,7 @@ def getSentiment(polarityValue: int) -> str:
         return 'Positive'
 
 def cleanTweet(tweet: str) -> str:
+    tweet = tweet.lower()
     tweet = re.sub(r'http\S+', '', str(tweet))
     tweet = re.sub(r'bit.ly/\S+', '', str(tweet))
     tweet = tweet.strip('[link]')
@@ -58,16 +57,11 @@ if __name__ == "__main__":
             .format("socket")\
             .option("host", "127.0.0.1")\
             .option("port", 3333)\
+            .schema()\
             .load()
 
-    words = lines.select(
-        # explode turns each item in an array into a separate row
-        explode(
-            split(lines.value, ' ')
-        ).alias('word')
-    )
 
-    query = words\
+    query = lines\
         .writeStream\
         .outputMode('complete')\
         .format('console')\
