@@ -63,6 +63,20 @@ if __name__ == "__main__":
             .option("port", 3333)\
             .load()
 
+    tweet_df_string = lines.selectExpr("CAST(value AS STRING)")
 
-    lines.printSchema()
-    df1 = lines.select("tweet.*")
+    tweets_tab = tweet_df_string.withColumn('word', explode(split(col('value'), ' '))) \
+    .groupBy('word') \
+    .count() \
+    .sort('count', ascending=False). \
+    filter(col('word').contains('#'))
+
+    writeTweet = tweets_tab.writeStream. \
+    outputMode("complete"). \
+    format("memory"). \
+    queryName("tweetquery"). \
+    trigger(processingTime='2 seconds'). \
+    start()
+
+
+
