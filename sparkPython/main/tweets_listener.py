@@ -3,9 +3,6 @@ import json
 from config.config import *
 import socket
 
-bearer_token = BEARER_TOKEN
-search_term = "#Andrew Tate"
-
 def twitterAuth():
   # create the authentication object
   authenticate = tweepy.OAuthHandler(API_KEY, API_KEY_SECRET)
@@ -15,7 +12,9 @@ def twitterAuth():
   return authenticate
 
 class TweetListener(tweepy.StreamingClient):
-  def __init__(self, csocket):
+
+  def __init__(self, bearer_token, csocket):
+    super().__init__(bearer_token)
     self.client_socket = csocket
 
   def on_tweet(self, tweet):
@@ -28,7 +27,7 @@ class TweetListener(tweepy.StreamingClient):
       # the 'text' in the JSON file contains the actual tweet.
       data = json.dumps(tw_dict, default=str)
       # the actual tweet data is sent to the client socket
-      self.client_socket.send(data.encode('utf-8'))
+      self.client_socket.sendall(data.encode('utf-8'))
       print("Sended ALL!!!")
       return True
 
@@ -41,9 +40,9 @@ class TweetListener(tweepy.StreamingClient):
     print(status_code)
     return False
 
-  def start_streaming_tweets(self, search_term):
+  def start_streaming_tweets(self):
     self.add_rules(tweepy.StreamRule(value="BTS lang:en"))
-    self.sample(tweet_fields=["created_at"], expansions=["author_id"],user_fields=["username", "name"])
+    self.filter(tweet_fields=["created_at"], expansions=["author_id"],user_fields=["username", "name"])
     
 
 if __name__ == "__main__":
@@ -78,7 +77,7 @@ if __name__ == "__main__":
 
   # ALL LEGACY RULE DELETE.
   delete_all_rules(my_stream, rules)
-  my_stream.start_streaming_tweets(search_term)
+  my_stream.start_streaming_tweets()
 
     
 

@@ -78,5 +78,7 @@ if __name__ == "__main__":
     trigger(processingTime='2 seconds'). \
     start()
 
+    spark.stop()
+
 
 
