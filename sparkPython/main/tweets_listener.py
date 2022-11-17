@@ -43,7 +43,7 @@ class TweetListener(tweepy.StreamingClient):
 
   def start_streaming_tweets(self, search_term):
     self.add_rules(tweepy.StreamRule(value="BTS lang:en"))
-    self.filter(tweet_fields=["created_at"], expansions=["author_id"],user_fields=["username", "name"])
+    self.sample(tweet_fields=["created_at"], expansions=["author_id"],user_fields=["username", "name"])
     
 
 if __name__ == "__main__":
