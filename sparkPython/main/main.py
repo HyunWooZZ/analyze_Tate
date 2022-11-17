@@ -53,11 +53,15 @@ if __name__ == "__main__":
             .master("local[*]")\
             .getOrCreate()
 
+    spark.sparkContext.setLogLevel('WARN')
+
+    tweet_schema = StructType().add("ID", "string").add("text", "string").add("created_at", "string")
+
     lines = spark.readStream\
             .format("socket")\
             .option("host", "127.0.0.1")\
             .option("port", 3333)\
-            .schema()\
+            .schema(tweet_schema)\
             .load()
 
 

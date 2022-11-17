@@ -15,22 +15,25 @@ def twitterAuth():
   return authenticate
 
 class TweetListener(tweepy.StreamingClient):
-  # def __init__(self, csocket):
-  #   self.client_socket = csocket
+  def __init__(self, csocket):
+    self.client_socket = csocket
 
-  def on_data(self, data):
+  def on_tweet(self, tweet):
+    tw_dict = {}
     try:
-      # read the Twitter data which comes as a JSON format
-      msg = json.loads(data)
+      # read the Twitter data and then transform AS DICT
+      tw_dict["ID"] = tweet.id
+      tw_dict["text"] = tweet.text
+      tw_dict["created_at"] = tweet.created_at
       # the 'text' in the JSON file contains the actual tweet.
-      print(msg)
+      data = json.dumps(tw_dict, default=str)
       # the actual tweet data is sent to the client socket
-      # self.client_socket.send(msg.encode('utf-8'))
+      self.client_socket.send(data.encode('utf-8'))
       print("Sended ALL!!!")
       return True
 
     except BaseException as e:
-        # Error handling
+      # Error handling
       print("Ahh! Look what is wrong : %s" % str(e))
       return True
 
@@ -40,10 +43,11 @@ class TweetListener(tweepy.StreamingClient):
 
   def start_streaming_tweets(self, search_term):
     self.add_rules(tweepy.StreamRule(value="BTS lang:en"))
-    self.filter(tweet_fields=["created_at"], expansions=["author_id"])
+    self.filter(tweet_fields=["created_at"], expansions=["author_id"],user_fields=["username", "name"])
     
-    
+
 if __name__ == "__main__":
+
   def delete_all_rules(client, rules):
     if rules is None or rules.data is None:
         return None
@@ -52,27 +56,27 @@ if __name__ == "__main__":
     client.delete_rules(ids=ids)
 
   
-  # # create a socket object
-  # s = socket.socket()
+  # create a socket object
+  s = socket.socket()
 
-  # # Get local machine name : host and port
-  # host = "127.0.0.1"
-  # port = 3333
+  # Get local machine name : host and port
+  host = "127.0.0.1"
+  port = 3333
 
-  # # Bind to the port
-  # s.bind((host, port))
-  # print("Listening on port: %s" % str(port))
+  # Bind to the port
+  s.bind((host, port))
+  print("Listening on port: %s" % str(port))
 
-  # # Wait and Establish the connection with client.
-  # s.listen(5)
-  # c, addr = s.accept()
+  # Wait and Establish the connection with client.
+  s.listen(5)
+  c, addr = s.accept()
 
-  # print("Received request from: " + str(addr))
+  print("Received request from: " + str(addr))
 
-  my_stream = TweetListener(bearer_token=BEARER_TOKEN)# csocket=c)
+  my_stream = TweetListener(bearer_token=BEARER_TOKEN, csocket=c)
   rules = my_stream.get_rules()
 
-  # 모든 규칙 제거
+  # ALL LEGACY RULE DELETE.
   delete_all_rules(my_stream, rules)
   my_stream.start_streaming_tweets(search_term)
 
