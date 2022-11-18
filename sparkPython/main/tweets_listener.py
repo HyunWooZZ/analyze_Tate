@@ -3,6 +3,12 @@ import json
 from config.config import *
 import socket
 
+import os
+import sys
+
+os.environ['PYSPARK_PYTHON'] = sys.executable
+os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
+
 def twitterAuth():
   # create the authentication object
   authenticate = tweepy.OAuthHandler(API_KEY, API_KEY_SECRET)

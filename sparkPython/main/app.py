@@ -77,7 +77,7 @@ if __name__ == "__main__":
 #     polarity_tweets = subjectivity_tweets.withColumn("polarity", polarity(col("processed_text")))
 #     sentiment_tweets = polarity_tweets.withColumn("sentiment", sentiment(col("polarity")))
     writeTweet = raw_tweets.writeStream. \
-    outputMode("complete"). \
+    outputMode("append"). \
     format("memory"). \
     queryName("tweetquery"). \
     trigger(processingTime='2 seconds'). \
