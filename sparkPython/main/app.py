@@ -1,30 +1,30 @@
 import re
 
 from pyspark.sql import SparkSession
+from pyspark.sql.types import StringType, StructType, FloatType
 from pyspark.sql import functions as F
 from pyspark.sql.functions import *
 
-# from textblob import TextBlob
+from textblob import TextBlob
 
 
-# # Create a function to get the subjectifvity
-# def getSubjectivity(tweet: str) -> float:
-#     return TextBlob(tweet).sentiment.subjectivity
+# Create a function to get the subjectifvity
+def getSubjectivity(tweet: str) -> float:
+    return TextBlob(tweet).sentiment.subjectivity
 
-# # Create a function to get the polarity
-# def getPolarity(tweet: str) -> float:
-#     return TextBlob(tweet).sentiment.polarity
+# Create a function to get the polarity
+def getPolarity(tweet: str) -> float:
+    return TextBlob(tweet).sentiment.polarity
 
-# def getSentiment(polarityValue: int) -> str:
-#     if polarityValue < 0:
-#         return 'Negative'
-#     elif polarityValue == 0:
-#         return 'Neutral'
-#     else:
-#         return 'Positive'
+def getSentiment(polarityValue: int) -> str:
+    if polarityValue < 0:
+        return 'Negative'
+    elif polarityValue == 0:
+        return 'Neutral'
+    else:
+        return 'Positive'
 
 def cleanTweet(tweet: str) -> str:
-    tweet = tweet.lower()
     tweet = re.sub(r'http\S+', '', str(tweet))
     tweet = re.sub(r'bit.ly/\S+', '', str(tweet))
     tweet = tweet.strip('[link]')
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         .master("local[*]")\
         .getOrCreate()
 
-    spark.sparkContext.setLogLevel("ERROR")
+    spark.sparkContext.setLogLevel("WARN")
 
     tweet_schema = StructType().add("ID", "string").add("text", "string").add("created_at", "string")
 
@@ -69,21 +69,21 @@ if __name__ == "__main__":
     df1 = values.select("tweet.*")
     clean_tweets = F.udf(cleanTweet, StringType())
     raw_tweets = df1.withColumn('processed_text', clean_tweets(col("text")))
-#     subjectivity = F.udf(getSubjectivity, FloatType())
-#     polarity = F.udf(getPolarity, FloatType())
-#     sentiment = F.udf(getSentiment, StringType())
 
-#     subjectivity_tweets = raw_tweets.withColumn('subjectivity', subjectivity(col("processed_text")))
-#     polarity_tweets = subjectivity_tweets.withColumn("polarity", polarity(col("processed_text")))
-#     sentiment_tweets = polarity_tweets.withColumn("sentiment", sentiment(col("polarity")))
-    writeTweet = raw_tweets.writeStream. \
+    subjectivity = F.udf(getSubjectivity, FloatType())
+    polarity = F.udf(getPolarity, FloatType())
+    sentiment = F.udf(getSentiment, StringType())
+
+    subjectivity_tweets = raw_tweets.withColumn('subjectivity', subjectivity(col("processed_text")))
+    polarity_tweets = subjectivity_tweets.withColumn("polarity", polarity(col("processed_text")))
+    sentiment_tweets = polarity_tweets.withColumn("sentiment", sentiment(col("polarity")))
+
+    writeTweet = sentiment_tweets.writeStream. \
     outputMode("append"). \
-    format("memory"). \
+    format("console"). \
     queryName("tweetquery"). \
     trigger(processingTime='2 seconds'). \
     start()
-
-    spark.stop()
 
 
 
