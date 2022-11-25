@@ -8,42 +8,37 @@ from pyspark.sql.functions import *
 from textblob import TextBlob
 
 
-# Create a function to get the subjectifvity
-def getSubjectivity(tweet: str) -> float:
-    return TextBlob(tweet).sentiment.subjectivity
+TRESHOLD = 0.3
 
-# Create a function to get the polarity
+
+# Create a function to get the polaritys
 def getPolarity(tweet: str) -> float:
     return TextBlob(tweet).sentiment.polarity
 
+# Create a function to get sentimental category
 def getSentiment(polarityValue: int) -> str:
-    if polarityValue < 0:
+    if polarityValue < (-TRESHOLD):
         return 'Negative'
-    elif polarityValue == 0:
-        return 'Neutral'
-    else:
+    elif polarityValue > TRESHOLD:
         return 'Positive'
+    else:
+        return "Neutral"
 
-def cleanTweet(tweet: str) -> str:
-    tweet = re.sub(r'http\S+', '', str(tweet))
-    tweet = re.sub(r'bit.ly/\S+', '', str(tweet))
-    tweet = tweet.strip('[link]')
-
-    # remove users
-    tweet = re.sub('(RT\s@[A-Za-z]+[A-Za-z0-9-_]+)', '', str(tweet))
-    tweet = re.sub('(@[A-Za-z]+[A-Za-z0-9-_]+)', '', str(tweet))
-
-    # remove puntuation
-    my_punctuation = '!"$%&\'()*+,-./:;<=>?[\\]^_`{|}~•@â'
-    tweet = re.sub('[' + my_punctuation + ']+', ' ', str(tweet))
-
-    # remove number
-    tweet = re.sub('([0-9]+)', '', str(tweet))
-
-    # remove hashtag
-    tweet = re.sub('(#[A-Za-z]+[A-Za-z0-9-_]+)', '', str(tweet))
-
-    return tweet
+# Clean the tweet
+def clean_tweet(tweet):
+    r = tweet.lower()
+    r = re.sub("'", "", r) # This is to avoid removing contractions in english₩``
+    r = re.sub("@[A-Za-z0-9_]+","", r)
+    r = re.sub("#[A-Za-z0-9_]+","", r)
+    r = re.sub(r'http\S+', '', r)
+    r = re.sub('[()!?]', ' ', r)
+    r = re.sub('\[.*?\]',' ', r)
+    r = re.sub("[^a-z0-9]"," ", r)
+    r = r.split()
+    stopwords = ["for", "on", "an", "a", "of", "and", "in", "the", "to", "from"]
+    r = [w for w in r if not w in stopwords]
+    r = " ".join(word for word in r)
+    return r
 
 
 if __name__ == "__main__":
@@ -63,25 +58,36 @@ if __name__ == "__main__":
         .option("port", 3333)\
         .load()
 
+    
     values = df.select(from_json(df.value.cast("string"), tweet_schema).alias("tweet"))
 
     
     df1 = values.select("tweet.*")
-    clean_tweets = F.udf(cleanTweet, StringType())
+
+    # Clean tweet
+    clean_tweets = F.udf(clean_tweet, StringType())
     raw_tweets = df1.withColumn('processed_text', clean_tweets(col("text")))
 
-    subjectivity = F.udf(getSubjectivity, FloatType())
+    # Classify all tweet by sentiment treshhold
     polarity = F.udf(getPolarity, FloatType())
     sentiment = F.udf(getSentiment, StringType())
-
-    subjectivity_tweets = raw_tweets.withColumn('subjectivity', subjectivity(col("processed_text")))
-    polarity_tweets = subjectivity_tweets.withColumn("polarity", polarity(col("processed_text")))
+    polarity_tweets = raw_tweets.withColumn("polarity", polarity(col("processed_text")))
     sentiment_tweets = polarity_tweets.withColumn("sentiment", sentiment(col("polarity")))
 
-    writeTweet = sentiment_tweets.writeStream. \
-    outputMode("append"). \
+
+    window_tweets = sentiment_tweets.select("*")\
+    .groupby(window(sentiment_tweets.created_at, "60 seconds"), sentiment_tweets.sentiment) \
+    .agg(count("*").alias("numEvents"))
+
+
+
+    writeTweet = window_tweets.writeStream. \
+    outputMode("update"). \
     format("console"). \
     queryName("tweetquery"). \
-    trigger(processingTime='2 seconds'). \
     start()
 
+    writeTweet.awaitTermination()
+
+
+    spark.stop()

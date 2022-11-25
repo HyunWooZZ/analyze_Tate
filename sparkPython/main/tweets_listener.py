@@ -33,8 +33,7 @@ class TweetListener(tweepy.StreamingClient):
       # the 'text' in the JSON file contains the actual tweet.
       data = json.dumps(tw_dict, default=str)
       # the actual tweet data is sent to the client socket
-      self.client_socket.sendall(data.encode('utf-8'))
-      print("Sended ALL!!!")
+      self.client_socket.send(data.encode('utf-8'))
       return True
 
     except BaseException as e:
@@ -73,7 +72,7 @@ if __name__ == "__main__":
   print("Listening on port: %s" % str(port))
 
   # Wait and Establish the connection with client.
-  s.listen(5)
+  s.listen(1)
   c, addr = s.accept()
 
   print("Received request from: " + str(addr))
